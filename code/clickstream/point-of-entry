@@ -1,0 +1,30 @@
+point-of-entry
+
+from DataPipeline import *
+import pandas as pd
+import numpy as np
+from collections import defaultdict
+
+df = pd.read_csv('/home/ubuntu/dodge_mobile_clickstream.csv')
+
+sessions = joblib.load('/home/ubuntu/digital-personas/data/dodge/mobile/raw_clean_centers_timestamp')
+
+"""get epoch timestamp for sessions['visitorstarthour']"""
+pd.to_datetime(sessions['datetime'])
+
+def get_unixtime(time):    
+    return (time.astype(np.int64)/1e9).astype(np.int64)
+sessions['epochstart'] = get_unixtime(sessions['datetime'])
+
+df['axns'] = df.visitorid + df.visitordatetime.astype(str)
+sessions['epochstart'] = sessions.epochstart.astype(int)*1.0
+
+sessions['starts']= sessions.visitorid.astype(str) + sessions.epochstart.astype(str)
+
+firstactions2 = pd.merge(df,sessions, left_on='axns', right_on= 'starts', how='left')
+
+firstaxns = firstactions2[pd.notnull(firstactions2['epochstart'])]
+
+firstaxns.to_csv('/home/ubuntu/digital-personas/data/dodge/mobile/1staxns.csv')
+
+firstaxns_small = firstaxns[['visitorid_x','visitordatetime','clusterid']]
